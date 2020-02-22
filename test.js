@@ -64,7 +64,7 @@ testServer.on("listening", () => {
 
         if (!tests.length) {
             // Everything received, shut down servers
-            console.log("Tests completed, shutting down servers.");
+            console.log("Tests completed, shutting down servers");
             grpcServer.tryShutdown(() => {});
             testServer.close();
         }
