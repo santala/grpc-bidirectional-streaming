@@ -44,6 +44,11 @@ const testServer = http.createServer(function (request, response) {
     }, wait);
 });
 
+function shutDownServers() {
+    grpcServer.tryShutdown(() => {});
+    testServer.close();
+}
+
 testServer.on("listening", () => {
     // Test server ready; run tests
 
@@ -59,14 +64,13 @@ testServer.on("listening", () => {
     call.on("data", (uriContent) => {
         // Confirm that messages arrive in the correct order and with the correct value
         const test = tests.shift();
-        assert.equal(test, uriContent.content, "Wrong content received");
+        assert.equal(uriContent.content, test, "Wrong content received");
         console.log("Received: " + JSON.stringify(uriContent));
 
         if (!tests.length) {
             // Everything received, shut down servers
             console.log("Tests completed, shutting down servers");
-            grpcServer.tryShutdown(() => {});
-            testServer.close();
+            shutDownServers();
         }
     });
 
@@ -82,6 +86,11 @@ testServer.on("listening", () => {
     // Inform the server that connection can be closed.
     // The server should still complete all of the requests.
     call.end();
+
+    // Test that the service fullfills outstanding requests
+    setTimeout(() => {
+        assert.equal(tests.length, 0, "Tests not completed");
+    }, Math.max(...tests) + 2000);
 });
 
 

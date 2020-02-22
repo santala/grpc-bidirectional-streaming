@@ -38,8 +38,7 @@ async function createResponse(uri) {
         console.log(e);
         return {
             uri: uri,
-            status: 500,
-            content: ""
+            status: 500
         };
     }
 }
