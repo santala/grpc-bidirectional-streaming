@@ -13,5 +13,6 @@ message URI {
 
 message URIContent {
     string uri = 1;
-    string content = 2;
+    int32 status = 2;
+    string content = 3;
 }
