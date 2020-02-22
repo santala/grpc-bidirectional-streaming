@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package urifetch;
+
+service URIFetch {
+    rpc GetContent(URI) returns (URIContent) {}
+    rpc StreamContent(stream URI) returns (stream URIContent) {}
+}
+
+message URI {
+    string uri = 1;
+}
+
+message URIContent {
+    string uri = 1;
+    string content = 2;
+}

@@ -1,0 +1,29 @@
+{
+  "name": "grpc-bidirectional-streaming",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "watch": "nodemon ./server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/santala/grpc-bidirectional-streaming.git"
+  },
+  "author": "Simo Santala",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/santala/grpc-bidirectional-streaming/issues"
+  },
+  "homepage": "https://github.com/santala/grpc-bidirectional-streaming#readme",
+  "dependencies": {
+    "@grpc/proto-loader": "^0.5.3",
+    "async": "^3.1.1",
+    "express": "^4.17.1",
+    "grpc": "^1.24.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}
