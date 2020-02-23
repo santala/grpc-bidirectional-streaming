@@ -43,34 +43,32 @@ async function createResponse(uri) {
     }
 }
 
-function getContent(call, callback) {
-    createResponse(call.request.uri).then(response => {
-        callback(null, response);
-    });
-}
-
 function streamContent(call) {
-    let shouldEnd = false;
+    let endReceived = false;
     let requestsInProgress = 0;
-
-    call.on("data", async (req) => {
-        requestsInProgress++;
-        call.write(await createResponse(req.uri));
-        requestsInProgress--;
-
-        if (shouldEnd && requestsInProgress == 0) {
+    // Close the connection from server-side only after all the results have been sent
+    const tryEnd = () => {
+        if (endReceived && requestsInProgress === 0) {
             call.end();
         }
+    };
+
+    call.on("data", (request) => {
+        requestsInProgress++;
+        createResponse(request.uri).then(response => {
+            call.write(response);
+            requestsInProgress--;
+            tryEnd();
+        });
     });
 
     call.on("end", () => {
-        // Close the connection from server-side only after all the results have been sent
-        shouldEnd = true;
+        endReceived = true;
+        tryEnd();
     });
 }
 
 server.addService(uriFetch.URIFetch.service, {
-    getContent: getContent,
     streamContent: streamContent
 });
 server.start();

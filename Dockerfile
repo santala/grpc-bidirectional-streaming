@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 COPY package.json .
 RUN npm install
 
-EXPOSE 8080
+EXPOSE 50051
 CMD [ "npm", "start" ]
 
 COPY . .

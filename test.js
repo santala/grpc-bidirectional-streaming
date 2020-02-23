@@ -28,6 +28,7 @@ const packageDefinition = protoLoader.loadSync(
 );
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const uriFetch = protoDescriptor.urifetch;
+const client = new uriFetch.URIFetch("localhost:"+config.port, grpc.credentials.createInsecure());
 
 const http = require("http");
 
@@ -49,48 +50,79 @@ function shutDownServers() {
     testServer.close();
 }
 
-testServer.on("listening", () => {
-    // Test server ready; run tests
 
+function getContents(uris) {
+    return new Promise((resolve, reject) => {
+        const call = client.streamContent();
+        const responses = [];
+
+        call.on("error", reject);
+
+        call.on("data", (response) => {
+            console.log("Received response:", response);
+            responses.push(response);
+        });
+
+        call.on("end", () => {
+            resolve(responses);
+        });
+
+        uris.forEach(uri => {
+            const request = { uri: uri };
+            console.log("Sending request:", request);
+            call.write(request);
+        });
+
+        // Inform the server that all requests have been sent.
+        // The server should still complete all of the requests.
+        call.end();
+    });
+}
+
+
+async function runTests(tests) {
+    const testServerPort = testServer.address().port;
+    const makeURI = wait => "http://localhost:" + testServerPort + "?wait=" + wait;
+
+    let results = null;
+    try {
+        // Test that the service fulfills requests
+        setTimeout(() => {
+            assert.notStrictEqual(results, null, "Server not responding.");
+        }, Math.max(0, ...tests) + 1000);
+
+        results = await getContents(tests.map(makeURI));
+    } catch (e) {
+        console.error(e);
+    }
+
+    const resultContents = (results || []).map(r => r.content);
+
+    try {
+        assert.equal(results.length, tests.length, "Wrong number of results.");
+        tests.forEach(test => {
+            assert.equal(resultContents.includes(""+test), true, "Something not received.");
+        });
+    } catch (e) {
+        console.error(e);
+    }
+
+
+}
+
+
+testServer.on("listening", async () => {
+    // Test server ready; run tests
     const testServerPort = testServer.address().port;
     console.log("Test server listening at " + testServerPort);
 
-    const client = new uriFetch.URIFetch("localhost:"+config.port, grpc.credentials.createInsecure());
+    const tests = [0, 500, 1000, 2000];
+    await runTests(tests);
+    await runTests(tests.reverse());
+    await runTests([]);
 
-    const call = client.streamContent();
-
-    const tests = [0, 500, 1000, 2000, 4000];
-
-    call.on("data", (uriContent) => {
-        // Confirm that messages arrive in the correct order and with the correct value
-        const test = tests.shift();
-        assert.equal(uriContent.content, test, "Wrong content received");
-        console.log("Received: " + JSON.stringify(uriContent));
-
-        if (!tests.length) {
-            // Everything received, shut down servers
-            console.log("Tests completed, shutting down servers");
-            shutDownServers();
-        }
-    });
-
-    call.on("error", (err) => {
-        console.log("Error: " + err);
-    });
-
-    tests.forEach(t => {
-        const uri = "http://localhost:" + testServerPort + "?wait=" + t;
-        call.write({ uri: uri });
-    });
-
-    // Inform the server that connection can be closed.
-    // The server should still complete all of the requests.
-    call.end();
-
-    // Test that the service fullfills outstanding requests
-    setTimeout(() => {
-        assert.equal(tests.length, 0, "Tests not completed");
-    }, Math.max(...tests) + 2000);
+    console.log("Tests completed, shutting down servers");
+    shutDownServers();
 });
 
 

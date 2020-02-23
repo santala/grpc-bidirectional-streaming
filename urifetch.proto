@@ -3,7 +3,6 @@ syntax = "proto3";
 package urifetch;
 
 service URIFetch {
-    rpc GetContent(URI) returns (URIContent) {}
     rpc StreamContent(stream URI) returns (stream URIContent) {}
 }
 
